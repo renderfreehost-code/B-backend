@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
-from passlib.hash import bcrypt
+from passlib.hash import bcrypt, bcrypt_sha256
 from fastapi import Header, HTTPException
 from .database import get_conn
 
@@ -9,10 +9,25 @@ SECRET = os.getenv("JWT_SECRET", "change-this-secret")
 ALGO = "HS256"
 
 def hash_password(password: str) -> str:
-    return bcrypt.hash(password)
+    """Hash passwords safely for bcrypt.
+
+    bcrypt has a 72-byte password limit. bcrypt_sha256 pre-hashes first,
+    so long ADMIN_PASSWORD values will not crash Render startup.
+    """
+    if password is None:
+        raise ValueError("Password is required")
+    return bcrypt_sha256.hash(str(password))
 
 def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.verify(password, hashed)
+    if not password or not hashed:
+        return False
+    try:
+        if str(hashed).startswith("$bcrypt-sha256$"):
+            return bcrypt_sha256.verify(str(password), hashed)
+        # Backward compatibility for older bcrypt hashes created before this fix.
+        return bcrypt.verify(str(password)[:72], hashed)
+    except Exception:
+        return False
 
 def create_token(user: dict) -> str:
     payload = {
