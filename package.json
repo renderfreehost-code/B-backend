@@ -1,6 +1,6 @@
 {
-  "name": "educational-webbing-site-backend",
-  "version": "1.0.0",
+  "name": "educational-webbing-site-hitech-backend",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
